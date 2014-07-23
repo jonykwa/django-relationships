@@ -25,8 +25,8 @@ def mutually_exclusive_fix(sender, instance, created, **kwargs):
         if other:
             # delete any status that may conflict with the new one
             Relationship.objects.filter(
-                from_user=instance.from_user,
-                to_user=instance.to_user,
+                relationship_from_user=instance.relationship_from_user,
+                relationship_to_user=instance.relationship_to_user,
                 site=instance.site,
                 status=other
             ).delete()
