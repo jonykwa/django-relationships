@@ -11,6 +11,10 @@ from django.views.generic import ListView
 from .decorators import require_user
 from .models import RelationshipStatus
 
+from django.views.generic import FormView, View
+from django.shortcuts import render_to_response, render
+from django.contrib.auth.models import User
+
 
 @login_required
 def relationship_redirect(request):
