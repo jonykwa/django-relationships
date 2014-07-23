@@ -2,14 +2,14 @@ from .compat import User
 from .models import RelationshipStatus
 
 
-def relationship_exists(from_user, to_user, status_slug='following'):
+def relationship_exists(relationship_from_user, relationship_to_user, status_slug='following'):
     status = RelationshipStatus.objects.by_slug(status_slug)
     if status.from_slug == status_slug:
-        return from_user.relationships.exists(to_user, status)
+        return relationship_from_user.relationships.exists(relationship_to_user, status)
     elif status.to_slug == status_slug:
-        return to_user.relationships.exists(from_user, status)
+        return relationship_to_user.relationships.exists(relationship_from_user, status)
     else:
-        return from_user.relationships.exists(to_user, status, True)
+        return relationship_from_user.relationships.exists(relationship_to_user, status, True)
 
 
 def extract_user_field(model):
