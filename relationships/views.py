@@ -33,7 +33,7 @@ def get_relationship_status_or_404(status_slug):
         raise Http404
 
 
-@require_user
+'''@require_user
 def relationship_list(request, user, status_slug=None,
                       template_name='relationships/relationship_list.html'):
     if not status_slug:
@@ -61,12 +61,50 @@ def relationship_list(request, user, status_slug=None,
         qs = user.relationships.get_relationships(status=status, symmetrical=True)
 
     ec = dict(
-        from_user=user,
+        relationship_from_user=user,
         status=status,
         status_slug=status_slug,
     )
 
-    return _relationship_list(request, qs, template_name, extra_context=ec)
+    return _relationship_list(request, qs, template_name, extra_context=ec)'''
+    
+#@require_user
+class relationship_list(View):
+    template_name='relationships/relationship_list.html'
+    def get(self, request, username, status_slug):
+        user = User.objects.get(username=username)
+        if not status_slug:
+            status = RelationshipStatus.objects.following()
+            status_slug = status.from_slug
+        else:
+            # get the relationship status object we're talking about
+            status = get_relationship_status_or_404(status_slug)
+
+        # do some basic authentication
+        if status.login_required and not request.user.is_authenticated():
+            path = urlquote(request.get_full_path())
+            tup = settings.LOGIN_URL, 'next', path
+            return HttpResponseRedirect('%s?%s=%s' % tup)
+
+        if status.private and not request.user == user:
+            raise Http404
+
+        # get a queryset of users described by this relationship
+        if status.from_slug == status_slug:
+            qs = user.relationships.get_relationships(status=status)
+        elif status.to_slug == status_slug:
+            qs = user.relationships.get_related_to(status=status)
+        else:
+            qs = user.relationships.get_relationships(status=status, symmetrical=True)
+
+        ec = dict(
+            relationship_from_user=user,
+            status=status,
+            status_slug=status_slug,
+        )
+
+        #return _relationship_list(request, qs, template_name, extra_context=ec)
+        return render(request, self.template_name, {'relationship_list': qs})
 
 
 @login_required
@@ -95,4 +133,4 @@ def relationship_handler(request, user, status_slug, add=True,
 
     return render(request,
         template_name,
-        {'to_user': user, 'status': status, 'add': add})
+        {'relationship_to_user': user, 'status': status, 'add': add})
