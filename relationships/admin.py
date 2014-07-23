@@ -8,9 +8,9 @@ from .models import Relationship, RelationshipStatus
 
 class RelationshipInline(admin.TabularInline):
     model = Relationship
-    raw_id_fields = ('from_user', 'to_user')
+    raw_id_fields = ('relationship_from_user', 'relationship_to_user')
     extra = 1
-    fk_name = 'from_user'
+    fk_name = 'relationship_from_user'
 
 
 class UserRelationshipAdmin(UserAdmin):
