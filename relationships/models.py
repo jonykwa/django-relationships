@@ -50,10 +50,6 @@ class RelationshipStatus(models.Model):
 
 
 class Relationship(models.Model):
-    #from_user = models.ForeignKey(User,
-    #    related_name='from_users', verbose_name=_('from user'))
-    #to_user = models.ForeignKey(User,
-    #    related_name='to_users', verbose_name=_('to user'))
     relationship_from_user = models.ForeignKey(User,
         related_name='relationship_from_users', verbose_name=_('from user'))
     relationship_to_user = models.ForeignKey(User,
@@ -65,15 +61,15 @@ class Relationship(models.Model):
         verbose_name=_('site'), related_name='relationships')
 
     class Meta:
-        unique_together = (('from_user', 'to_user', 'status', 'site'),)
+        unique_together = (('relationship_from_user', 'relationship_to_user', 'status', 'site'),)
         ordering = ('created',)
         verbose_name = _('Relationship')
         verbose_name_plural = _('Relationships')
 
     def __unicode__(self):
-        return (_('Relationship from %(from_user)s to %(to_user)s')
-                % {'from_user': self.from_user.username,
-                   'to_user': self.to_user.username})
+        return (_('Relationship from %(relationship_from_user)s to %(relationship_to_user)s')
+                % {'relationship_from_user': self.relationship_from_user.username,
+                   'relationship_to_user': self.relationship_to_user.username})
 
 field = models.ManyToManyField(User, through=Relationship,
                                symmetrical=False, related_name='related_to')
@@ -102,8 +98,8 @@ class RelationshipManager(User._default_manager.__class__):
             status = RelationshipStatus.objects.following()
 
         relationship, created = Relationship.objects.get_or_create(
-            from_user=self.instance,
-            to_user=user,
+            relationship_from_user=self.instance,
+            relationship_to_user=user,
             status=status,
             site=Site.objects.get_current()
         )
@@ -122,8 +118,8 @@ class RelationshipManager(User._default_manager.__class__):
             status = RelationshipStatus.objects.following()
 
         res = Relationship.objects.filter(
-            from_user=self.instance,
-            to_user=user,
+            relationship_from_user=self.instance,
+            relationship_to_user=user,
             status=status,
             site__pk=settings.SITE_ID
         ).delete()
@@ -135,16 +131,24 @@ class RelationshipManager(User._default_manager.__class__):
 
     def _get_from_query(self, status):
         return dict(
-            to_users__from_user=self.instance,
-            to_users__status=status,
-            to_users__site__pk=settings.SITE_ID,
+            #to_users__from_user=self.instance,
+            #to_users__status=status,
+            #to_users__site__pk=settings.SITE_ID,
+
+            relationship_to_users__relationship_from_user=self.instance,
+            relationship_to_users__status=status,
+            relationship_to_users__site__pk=settings.SITE_ID,
         )
 
     def _get_to_query(self, status):
         return dict(
-            from_users__to_user=self.instance,
-            from_users__status=status,
-            from_users__site__pk=settings.SITE_ID
+            #from_users__to_user=self.instance,
+            #from_users__status=status,
+            #from_users__site__pk=settings.SITE_ID
+
+            relationship_from_users__relationship_to_user=self.instance,
+            relationship_from_users__status=status,
+            relationship_from_users__site__pk=settings.SITE_ID
         )
 
     def get_relationships(self, status, symmetrical=False):
@@ -190,23 +194,23 @@ class RelationshipManager(User._default_manager.__class__):
         users.  An optional :class:`RelationshipStatus` instance can be specified.
         """
         query = dict(
-            to_users__from_user=self.instance,
-            to_users__to_user=user,
-            to_users__site__pk=settings.SITE_ID,
+            relationship_to_users__relationship_from_user=self.instance,
+            relationship_to_users__relationship_to_user=user,
+            relationship_to_users__site__pk=settings.SITE_ID,
         )
 
         if status:
-            query.update(to_users__status=status)
+            query.update(relationship_to_users__status=status)
 
         if symmetrical:
             query.update(
-                from_users__to_user=self.instance,
-                from_users__from_user=user,
-                from_users__site__pk=settings.SITE_ID
+                relationship_from_users__relationship_to_user=self.instance,
+                relationship_from_users__relationship_from_user=user,
+                relationship_from_users__site__pk=settings.SITE_ID
             )
 
             if status:
-                query.update(from_users__status=status)
+                query.update(relationship_from_users__status=status)
 
         return User.objects.filter(**query).exists()
 
@@ -260,8 +264,8 @@ elif django.VERSION > (1, 2) and django.VERSION < (1, 4):
                 core_filters={'related_to__pk': instance._get_pk_val()},
                 instance=instance,
                 symmetrical=False,
-                source_field_name='from_user',
-                target_field_name='to_user'
+                source_field_name='relationship_from_user',
+                target_field_name='relationship_to_user'
             )
             return manager
 
@@ -280,8 +284,8 @@ else:
                 query_field_name='related_to',
                 instance=instance,
                 symmetrical=False,
-                source_field_name='from_user',
-                target_field_name='to_user',
+                source_field_name='relationship_from_user',
+                target_field_name='relationship_to_user',
                 through=Relationship,
             )
             return manager
@@ -289,3 +293,4 @@ else:
 #HACK
 field.contribute_to_class(User, 'relationships')
 setattr(User, 'relationships', RelationshipsDescriptor())
+
